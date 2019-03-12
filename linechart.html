@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <link rel="stylesheet" type="text/css" href="index.css">
+</head>
+<body>
+
+<div class="container">
+<h1 class="text">Bristol No2 Levels, 24hr span</h1>
+
+<form method="POST" onsubmit="getValues(); return false">
+  <select id="selectedLocation">
+    <option value="wells_rd_no2.xml">Wells Road</option>
+    <option value="brislington_no2.xml">Brislington</option>
+    <option value="fishponds_no2.xml">Fishponds</option>
+    <option value="rupert_st_no2.xml">Rupert Street</option>
+    <option value="newfoundland_way_no2.xml">Newfoundland Way</option>
+    <option value="parson_st_no2.xml">Parson Street</option>
+  </select>
+  <input id="pickedDate" type="date" min="2014-10-01" max="2017-01-01"/>
+  <button type="submit" value="submit"> Load Chart</button>
+</form>
+<div class="text" id="searchStatistics">Search for a location and date to see the statistics</div>
+<div id="chart"></div>
+</div>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+
+<script type="text/javascript">
+
+      google.charts.load('current', {'packages':['corechart']});
+      //google.charts.setOnLoadCallback(drawChart);
+      
+      function getValues(){
+          var xmlInput = document.getElementById("selectedLocation").value;
+          var dateInput = document.getElementById("pickedDate").value;
+          var d = new Date(dateInput);
+          
+          var month = d.getMonth() + 1;
+          var day = d.getDate();
+          var year = d.getFullYear();
+
+          if (day < 10) {
+              day = '0' + day;
+            } 
+            if (month < 10) {
+              month = '0' + month;
+            } 
+
+          var readingDate = String(day+"/"+month+"/"+year);
+
+          drawChart(readingDate, xmlInput);
+
+       }
+        
+
+        //Get average values to be shown on chart
+       function getAverage(values){
+        var total = 0;
+        for(var i = 0; i < values.length; i++) {
+            total += values[i];
+        }
+        console.log(total);
+        var avg = total / values.length;
+
+        return avg;
+       }
+
+      function drawChart(readingDate, xmlInput) {
+        
+        $.ajax({
+        type: "GET",
+        dataType: "xml",
+        async: true,
+        url: xmlInput,
+        contentType: "text/xml; charset=UTF-8",
+        success: function  (xml) {
+          
+          if(readingDate != null){
+            document.getElementById("searchStatistics").style.visibility = "hidden";
+            //Find all of the readings of the date
+            var q = "reading[date ='"+ readingDate +"']";
+            var readings = $(xml).find(q);
+
+            if(readings.length == 0){
+              alert("Sorry, no data available. Pick another date or another location!");
+            }
+          }
+          
+          
+          
+          //Empty array to store all of the values in
+            var values = [];
+            var no2values = [];
+
+          // This gets all of the values in the readings for the whole year
+            for (i = 0; i < readings.length; i++) {
+              // Get date and value only from readings, push an object into the values array.
+              var reading = {time: $(readings[i]).attr('time'), value: $(readings[i]).attr('val')};
+              values.push(reading);
+              no2values.push(reading.value);
+            }
+            
+            getAverage(no2values);
+
+            //Sort values in an ascending order  
+            // Code from https://stackoverflow.com/questions/979256/sorting-an-array-of-javascript-objects
+            values.sort(function(a, b) {
+                return parseFloat(a.time) - parseFloat(b.time);
+            });
+
+          //Map the values array to create a two-dimensional array that can be used in google charts
+            var result = values.map(value=>{
+              return [String(value.time), Number(value.value)];
+            });
+            
+
+          // Add data into google charts
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'time');
+            data.addColumn('number', 'No2 level, µg/m³');
+            data.addRows(result);
+            
+
+            var placeID = xmlInput.replace ("_", " ");
+            var placeID = placeID.replace('_no2.xml', ' ');
+
+            var options = {
+                title: placeID,
+                width: 1450,
+                height: 500,
+                colors: ['#ee8100', '#9575cd'],
+              animation: {
+                duration: 2000,
+                easing: 'linear',
+                startup: true
+              },
+              pointSize: 4
+          };
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart'));
+
+        chart.draw(data, options);
+      }
+    });
+  }
+
+  
+</script>
+
+</body>
+</html>
+

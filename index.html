@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<body>
+
+<h1>Wells rd No2 levels in 2015</h1>
+
+<div id="chart"></div>
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+
+<script type="text/javascript">
+google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        $.ajax({
+        type: "GET",
+        dataType: "xml",
+        async: true,
+        url: "wells_rd_no2.xml",
+        contentType: "text/xml; charset=UTF-8",
+        success: function  (xml) {
+
+          // Get all the readings from year 2015 at eight in the morning
+            var readings = $(xml).find("reading[date*='2015'][time ='08:00:00']");
+            
+            var values = [];
+          // This gets all of the values for the whole year
+            for (i = 0; i < readings.length; i++) {
+              var reading = {date: $(readings[i]).attr('date'), value: $(readings[i]).attr('val')};
+              values.push(reading);
+            }
+            
+             //Sort values in an ascending order  
+             // Code from: https://stackoverflow.com/questions/979256/sorting-an-array-of-javascript-objects
+            values.sort(function(a, b) {
+                return parseFloat(a.time) - parseFloat(b.time);
+            });
+
+            var result = values.map(current=>{
+              return [String(current.date), Number(current.value)];
+            });
+            
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'date');
+            data.addColumn('number', 'No2 level');
+            data.addRows(result);
+            
+
+            var options = {
+                title: ''
+            };
+
+        var chart = new google.visualization.ScatterChart(document.getElementById('chart'));
+
+        chart.draw(data, options);
+      }
+    });
+  }
+
+
+</script>
+
+</body>
+</html>
+

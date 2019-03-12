@@ -1,0 +1,18 @@
+.container {
+	text-align: center;
+	margin: auto;
+	height: 100%;
+}
+
+.text {
+	font-family: Helvetica;
+
+}
+
+#searchStatistics{
+	margin-top: 2em;
+}
+
+#chart {
+	margin:auto;
+}
